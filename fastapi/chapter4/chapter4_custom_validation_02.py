@@ -1,12 +1,12 @@
 from datetime import date
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, ValidationError, field_validator
 
 class Person(BaseModel):
     first_name: str
     last_name: str
     birthdate: date
 
-@validator("birthdate")
+@field_validator("birthdate")
 def valid_birthdate(cls, v: date):
     delta = date.today() - v
     age = delta.days / 365
@@ -14,4 +14,13 @@ def valid_birthdate(cls, v: date):
         raise ValueError("You seem a bit too old!")
     return v
 
-print(Person(first_name = "abc", ))
+
+try:
+    person = Person(
+    first_name="str",
+    last_name= "str",
+    birthdate= "1500-05-01")
+    print(person)
+except ValidationError as e:
+    print(e)
+
