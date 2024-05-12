@@ -1,0 +1,17 @@
+# chapter5_class_dependency_02
+
+GET HTTP://localhost:8000/items?skip=1&limit=99 HTTP/1.1
+
+GET HTTP://localhost:8000/things?skip=1&size=99 HTTP/1.1
+
+# chapter5_path_dependency_01.py
+
+GET HTTP://localhost:8000/protected-route HTTP/1.1
+secret: SECRET
+
+# chapter5_path_dependency_01.py
+GET HTTP://localhost:8000/router/route1 HTTP/1.1
+secret: SECRET
+
+GET HTTP://localhost:8000/router/route2 HTTP/1.1
+secret: SECRET
