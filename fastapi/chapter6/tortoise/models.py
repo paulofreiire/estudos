@@ -12,7 +12,7 @@ class PostBase(BaseModel):
     publication_date: datetime = Field(default_factory=datetime.now)
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PostPartialUpdate(BaseModel):

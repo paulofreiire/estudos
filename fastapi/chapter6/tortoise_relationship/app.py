@@ -1,13 +1,17 @@
 from typing import List, Tuple
 
-from fastapi import Depends, FastAPI, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from tortoise.contrib.fastapi import register_tortoise
+from tortoise.exceptions import DoesNotExist
 
 from models import (
+    CommentBase,
+    CommentTortoise,
     PostDB,
     PostCreate,
     PostPartialUpdate,
     PostTortoise,
+    CommentDB
 )
 
 app = FastAPI()
@@ -22,7 +26,10 @@ async def pagination(
 
 
 async def get_post_or_404(id: int) -> PostTortoise:
-    return await PostTortoise.get(id=id)
+    try:
+        return await PostTortoise.get(id=id).prefetch_related("comments")
+    except DoesNotExist:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
 
 @app.get("/posts")
@@ -42,7 +49,7 @@ async def get_post(post: PostTortoise = Depends(get_post_or_404)) -> PostDB:
 
 @app.post("/posts", response_model=PostDB, status_code=status.HTTP_201_CREATED)
 async def create_post(post: PostCreate) -> PostDB:
-    post_tortoise = await PostTortoise.create(**post.dict())
+    post_tortoise = await PostTortoise.create(**post.model_dump())
 
     return PostDB.model_validate(post_tortoise)
 
@@ -51,7 +58,7 @@ async def create_post(post: PostCreate) -> PostDB:
 async def update_post(
     post_update: PostPartialUpdate, post: PostTortoise = Depends(get_post_or_404)
 ) -> PostDB:
-    post.update_from_dict(post_update.dict(exclude_unset=True))
+    post.update_from_dict(post_update.model_dump(exclude_unset=True))
     await post.save()
 
     return PostDB.model_validate(post)
@@ -61,13 +68,25 @@ async def update_post(
 async def delete_post(post: PostTortoise = Depends(get_post_or_404)):
     await post.delete()
 
+@app.post("/comments", response_model=CommentDB, status_code=status.HTTP_201_CREATED)
+async def create_comment(comment: CommentBase) -> CommentDB:
+    try:
+        await PostTortoise.get(id=comment.post_id)
+    except DoesNotExist:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Post {id} does not exist"
+        )
+    comment_tortoise = await CommentTortoise.create(**comment.model_dump())
+    return CommentDB.model_dump(comment_tortoise)
+
 
 TORTOISE_ORM = {
-    "connections": {"default": "sqlite://chapter6_tortoise.db"},
+    "connections": {"default": "sqlite://chapter6_tortoise_relationship.db"},
     "apps": {
-        "models": {
-            "models": ["models"],
-            "default_connection": "default",
+            "models": {
+                "models": ["models", "aerich.models"],
+                "default_connection": "default",
         },
     },
 }
