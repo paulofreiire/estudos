@@ -1,0 +1,10 @@
+GET http://localhost:8000/protected-route HTTP/1.1
+content-type: application/json
+Token: SECRET
+
+POST http://localhost:8000/register HTTP/1.1
+
+{
+    "email": "regisbraum@hotmail.com",
+    "passowrd": 123123
+}
